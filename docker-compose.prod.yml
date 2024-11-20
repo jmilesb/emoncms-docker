@@ -1,12 +1,11 @@
 # production / deployment / clean testing enviroment setup
 
-version: '2'
 services:
 
   web:
     ports:
-      # Expose Emoncms to the world on port 80
-      - 80:80
+      # Expose Emoncms to the world on port 8080
+      - 8080:80
     volumes:
       # Disable access to /php-info.php for security reasons
       - /dev/null:/var/www/html/php-info.php

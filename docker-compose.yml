@@ -1,7 +1,5 @@
 # Base docker compose, added to by docker-compose.override or docker-compose.prod. See Readme.md
 
-version: '2'
-
 services:
   # PHP & apache container using offical Docker PHP iamge
   web:
@@ -9,13 +7,25 @@ services:
     image: openenergymonitor/emoncms:latest
     build: web/.
     volumes:
-      # mount docker volumes persistant inside docker container
-      - emon-phpfina:/var/opt/emoncms/phpfina
-      - emon-phptimeseries:/var/opt/emoncms/phptimeseries
+    - type: bind
+      source: /mnt/emoncms/phpfiwa
+      target: /var/opt/emoncms/phpfiwa
+      bind:
+        create_host_path: true
+    - type: bind
+      source: /mnt/emoncms/phpfina
+      target: /var/opt/emoncms/phpfina
+      bind:
+        create_host_path: true
+    - type: bind
+      source: /etc/localtime
+      target: /etc/localtime
+      read_only: true
+      bind:
+        create_host_path: true
     links:
       - db
       - redis
-      - mqtt
 
   db:
     image: mariadb:11.0
@@ -23,8 +33,21 @@ services:
       - "MYSQL_HOST=localhost"
       - "MARIADB_AUTO_UPGRADE=1"
       - "MARIADB_INITDB_SKIP_TZINFO=1"
+    ports:
+      # Expose Emoncms to the world on port 80
+      - 3306:3306
     volumes:
-      - emon-db-data:/var/lib/mysql
+    - type: bind
+      source: /mnt/emoncms/db-data
+      target: /var/lib/mysql
+      bind:
+        create_host_path: true
+    - type: bind
+      source: /etc/localtime
+      target: /etc/localtime
+      read_only: true
+      bind:
+        create_host_path: true
     logging:
       driver: json-file
       options:
@@ -33,29 +56,19 @@ services:
   redis:
     image: redis:7.0
     volumes:
-      - emon-redis-data:/data
+    - type: bind
+      source: /mnt/emoncms/redis-data
+      target: /data
+      bind:
+        create_host_path: true
+    - type: bind
+      source: /etc/localtime
+      target: /etc/localtime
+      read_only: true
+      bind:
+        create_host_path: true
     logging:
       driver: json-file
       options:
         max-size: "10m"
           
-  mqtt:
-    image: eclipse-mosquitto:2.0
-    build: mqtt/.
-    restart: always
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-
-volumes:
-  emon-phpfiwa:
-    driver: local
-  emon-phpfina:
-    driver: local
-  emon-phptimeseries:
-    driver: local
-  emon-db-data:
-    driver: local
-  emon-redis-data:
-    driver: local

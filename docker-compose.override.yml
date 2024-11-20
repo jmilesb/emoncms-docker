@@ -21,9 +21,3 @@ services:
     env_file:
       - 'default.docker-env'
   
-  # Consider adding mosquitto broker
-  mqtt:
-    ports:
-      - 1883:1883
-    env_file:
-      - 'default.docker-env'
