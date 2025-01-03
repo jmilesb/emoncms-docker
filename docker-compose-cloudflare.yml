@@ -1,0 +1,54 @@
+services:
+  emoncms:
+    image: alexjunk/emoncms
+    volumes:
+    - type: bind
+      source: /mnt/emoncms
+      target: /data
+      bind:
+        create_host_path: true
+    environment:
+      - TZ=Europe/London
+      - REDIS_BUFFER=1 # 0 to disable low-write mode
+      - EMONCMS_LOG_LEVEL=2 # 1=INFO, 2=WARN, 3=ERROR
+      - MYSQL_DATABASE=emoncms
+      - MYSQL_USER=emoncms
+      - MYSQL_PASSWORD=emomcms
+      - MYSQL_ROOT_PASSWORD=emoncms
+      - MQTT_USER=""
+      - MQTT_PASSWORD=""
+      - MQTT_HOST=localhost
+      - MQTT_LOG_LEVEL=error
+      - CRT_FILE=/etc/ssl/apache2/server.pem
+      - KEY_FILE=/etc/ssl/apache2/server.key
+      - CNAME=localhost
+    ports:
+       # These ports are in format <host-port>:<container-port>
+ #     - 7443:443 # Public HTTPS Port 
+      - 8080:80 # Public HTTP Port
+      - 3306:3306
+#      - 9883:1883 # Public MQTT Port (if using the internal broker)
+    restart: always
+  
+  cloudflare-tunnel:
+    image: cloudflare/cloudflared
+    container_name: cloudflare-tunnel
+    hostname: cloudflare-tunnel
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+    network_mode: "host"
+    command: tunnel run
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    healthcheck:
+      test: ["CMD", "cloudflared", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
